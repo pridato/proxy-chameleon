@@ -1,0 +1,37 @@
+# Archivos y carpetas generados por CLion
+.idea/
+cmake-build-debug/
+cmake-build-release/
+CMakeLists.txt.user
+*.iml
+
+# Archivos binarios y ejecutables
+*.o
+*.out
+*.a
+*.so
+*.exe
+*.dll
+
+# Archivos de CMake
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Archivos de logs y temporales
+*.log
+*.tmp
+*.swp
+
+# Archivos de configuración del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos de compresión y empaquetado
+*.zip
+*.tar
+*.gz
+*.rar
+*.7z
