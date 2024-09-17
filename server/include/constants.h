@@ -6,7 +6,7 @@
 #define CONSTANTS_H
 
 #define PROXY_PORT 8080
-#define SERVER_IP "192.168.1.1"
+#define SERVER_IP "192.168.1.59"
 #define SERVER_PORT 80
 
 #endif //CONSTANTS_H
