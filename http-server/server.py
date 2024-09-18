@@ -1,19 +1,13 @@
-from http.server import SimpleHTTPRequestHandler, HTTPServer
+import asyncio
+import websockets
 
-PORT = 8081  # Puedes cambiar este puerto si es necesario
+async def echo(websocket, path):
+    async for message in websocket:
+        print(f"Received message: {message}")
+        await websocket.send(f"Echo: {message}")
 
-class CustomHandler(SimpleHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header("Content-type", "text/html")
-        self.end_headers()
-        self.wfile.write(b"Hello, world! This is a response from the HTTP server.")
+start_server = websockets.serve(echo, "localhost", 8081)
 
-def run(server_class=HTTPServer, handler_class=CustomHandler, port=PORT):
-    server_address = ('', port)
-    httpd = server_class(server_address, handler_class)
-    print(f'Starting httpd server on port {port}...')
-    httpd.serve_forever()
-
-if __name__ == "__main__":
-    run()
+asyncio.get_event_loop().run_until_complete(start_server)
+print("WebSocket server started on port 8081...")
+asyncio.get_event_loop().run_forever()
