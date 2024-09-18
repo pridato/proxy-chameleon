@@ -21,9 +21,8 @@ int connect_to_server(const char *server_ip, int server_port) {
     struct sockaddr_in server_addr;
     memset(&server_addr, 0, sizeof(server_addr));
 
-    // configuración del servidor
     server_addr.sin_family = AF_INET; // ipv4
-    server_addr.sin_port = htons(server_port); // de host -> red
+    server_addr.sin_port = htons(8081); // de host -> red
     inet_pton(AF_INET, server_ip, &server_addr.sin_addr); // convertimos la ip de text a binario
 
     // nos conectarnos a un socket ya creado del servidor
@@ -34,6 +33,31 @@ int connect_to_server(const char *server_ip, int server_port) {
     }
 
     return sock;
+}
+
+/**
+ * funcion para manejar el handhsake del websocket entre el proxy y el servidor
+ * @param client_socket socket del cliente
+ * @param server_socket socket del servidor final
+ */
+void handle_websocket_handshake(const int client_socket, const int server_socket) {
+    char buffer[BUFFER_SIZE];
+
+    ssize_t bytes_received = read(client_socket, buffer, BUFFER_SIZE);
+    if (bytes_received <= 0) {
+        perror("Error al leer del cliente");
+        return;
+    }
+
+    send(server_socket, buffer, bytes_received, 0);
+
+    bytes_received = read(server_socket, buffer, BUFFER_SIZE);
+    if (bytes_received <= 0) {
+        perror("Error al leer del servidor");
+        return;
+    }
+
+    send(client_socket, buffer, bytes_received, 0);
 }
 
 /**
@@ -73,35 +97,30 @@ void start_proxy(const int listen_port, const char *server_ip, const int server_
     printf("Proxy escuchando en el puerto 8080...\n");
 
     while (1) {
-        const int client_socket = accept_client(proxy_socket, &client_addr, &client_addr_len);
-
-        // leemos la peticion del cliente
-        int valread = read(client_socket, buffer, BUFFER_SIZE);
-        if (valread < 0) {
-            perror("Error en read");
-            close(client_socket);
-            exit(EXIT_FAILURE);
+        const int client_socket = accept(proxy_socket, (struct sockaddr *) &client_addr, &client_addr_len);
+        if (client_socket < 0) {
+            perror("Error en accept");
+            continue;
         }
+        
 
-        // una vez con la solicitud del cliente la tenemos que reenviar al servidor x ej. google
         const int server_socket = connect_to_server(server_ip, server_port);
-        send(server_socket, buffer, valread, 0);
 
-        // leemos la respuesta del servidor
-        valread = read(server_socket, buffer, BUFFER_SIZE);
-        if (valread < 0) {
-            perror("Error en read");
-            close(server_socket);
-            close(client_socket);
-            exit(EXIT_FAILURE);
+        handle_websocket_handshake(client_socket, server_socket);
+
+        // Redirigir mensajes del cliente al servidor y viceversa
+        while (1) {
+            ssize_t bytes_received = read(client_socket, buffer, BUFFER_SIZE);
+            if (bytes_received <= 0) break;
+            send(server_socket, buffer, bytes_received, 0);
+
+            bytes_received = read(server_socket, buffer, BUFFER_SIZE);
+            if (bytes_received <= 0) break;
+            send(client_socket, buffer, bytes_received, 0);
         }
-
-        // se la mandamos al cliente
-        send(client_socket, buffer, valread, 0);
 
         close(client_socket);
         close(server_socket);
-
     }
 }
 
